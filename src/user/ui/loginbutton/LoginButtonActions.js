@@ -25,7 +25,7 @@ export function loginUser() {
             {
                 return browserHistory.push(decodeURIComponent(currentLocation.query.redirect))
             }
-            return browserHistory.push('/my-page')
+            return browserHistory.push('/dashboard')
         })
     }
 }

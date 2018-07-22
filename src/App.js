@@ -18,31 +18,37 @@ import './css/oswald.css'
 import './css/open-sans.css'
 import './css/pure-min.css'
 import './App.css'
-const contract_address = "0x345ca3e014aaf5dca488057592ee47305d9b3e10"
-
+const contract_address = "0x8065f4c7b8c2bf53561af92d9da2ea022a0b28ca";
 class App extends Component {
+    constructor(props){
+        super(props);
+        this.state={
+            properties: []
+        }
+    }
     async componentWillMount(){
         const result = await getWeb3();
+        const self = this;
         window.web3 = result.web3;
         const contract = window.web3.eth.contract(RealEstate.abi);
         window.contract_instance = contract.at(contract_address);
         propertyLength().then(result => {
-            console.log(result)
+            for(var i=0;i<result.toNumber()-1;i++){
+                getProperty(i).then(property => {
+                    self.setState({
+                        properties: self.state.properties.concat(property)
+                    })
+                })
+            }
         })
-
     }
     render() {
         const OnlyAuthLinks = VisibleOnlyAuth(() =>
                 <span>
-        <li className="pure-menu-item">
-          <Link to="/my-page" className="pure-menu-link">MyPage</Link>
+        <li className="pure-menu-item" style={{marginTop: '5px'}}>
+          <Link to="/dashborad" className="pure-menu-link">MyPage</Link>
         </li>
-        <li className="pure-menu-item">
-          <Link to="/profile" className="pure-menu-link">Profile</Link>
-        </li>
-          <li>
-              <Link to="/">Become a host</Link>
-          </li>
+
         <LogoutButtonContainer />
       </span>
         );
@@ -57,7 +63,8 @@ class App extends Component {
             <div className="App">
                 <nav className="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
                     <Link to="/" className="pure-menu-heading pure-menu-link">Air bnb</Link>
-                    <ul className="navbar-nav ml-auto">
+                    <Link to="/market" className="pure-menu-heading pure-menu-link">Market</Link>
+                    <ul className="navbar-nav ml-auto" style={{width: '400px',position: 'absolute', right: 0}}>
                         <OnlyGuestLinks />
                         <OnlyAuthLinks />
                     </ul>

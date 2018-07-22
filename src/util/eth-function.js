@@ -75,6 +75,7 @@ export const userRequests = () => {
     return new Promise((resolve ,reject) => {
         window.contract_instance.userRequest({from: window.web3.eth.coinbase},function(err, result){
             if(err){reject(err)}
+            console.log('userRequests',result);
             resolve(result)
         })
     })
@@ -111,6 +112,26 @@ export const getRequests = (requestId) => {
     return new Promise((resolve, reject) => {
         window.contract_instance.requests(requestId,function(err, result){
             if(err){reject(err)}
+            resolve(result)
+        })
+    })
+};
+
+export const getOnSalePropertyLength = () => {
+    return new Promise((resolve, reject) => {
+        window.contract_instance.getOnSalePropertyLength({from: window.web3.eth.coinbase},function (err, result) {
+            if(err){reject(err)}
+            resolve(result)
+        })
+    })
+};
+
+export const getOnSalePropertyIds = () => {
+    return new Promise((resolve, reject) => {
+        console.log(window.contract_instance);
+        window.contract_instance.getOnSalePropertyIds(function (err, result) {
+            if(err){reject(err)}
+            console.log('on sale property id', result)
             resolve(result)
         })
     })

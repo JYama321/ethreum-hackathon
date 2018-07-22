@@ -10,6 +10,7 @@ import App from './App'
 import Home from './layouts/home/Home'
 import Dashboard from './layouts/dashboard/Dashboard'
 import Profile from './user/layouts/profile/Profile'
+import Market from './layouts/Market/market'
 
 // Redux Store
 import store from './store'
@@ -22,7 +23,7 @@ ReactDOM.render((
         <Route path="/" component={App}>
           <IndexRoute component={Home} />
           <Route path="dashboard" component={UserIsAuthenticated(Dashboard)} />
-          <Route path="profile" component={UserIsAuthenticated(Profile)} />
+          <Route path="market" component={Market} />
         </Route>
       </Router>
     </Provider>

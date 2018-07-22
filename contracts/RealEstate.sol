@@ -177,12 +177,20 @@ contract RealEstate{
         onSalePropertyIds.length--;
     }
 
-    function buyRewardAddress(address _rewardAddress, uint _propertyId) external payable{
+    function getOnSalePropertyLength() external view returns(uint){
+        return onSalePropertyIds.length;
+    }
+
+    function buyRewardAddress(uint _propertyId) external payable{
         Property storage property = properties[_propertyId];
         require(property.leasePrice <= msg.value && property.onSale);
         property.leaseLimit = now + property.leaseLimit;
         property.rewardAddress = msg.sender;
         removeOnSale(_propertyId);
+    }
+
+    function getOnSalePropertyIds() external view returns(uint[]) {
+        return onSalePropertyIds;
     }
 
     function resumeRewardAddress(uint _propertyId) external {

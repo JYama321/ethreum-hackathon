@@ -14,6 +14,6 @@ export function logoutUser() {
     dispatch(userLoggedOut())
 
     // Redirect home.
-    return browserHistory.push('/')
+    return browserHistory.push('/dashboard')
   }
 }
