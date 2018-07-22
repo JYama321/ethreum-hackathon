@@ -17,6 +17,6 @@ const store = createStore(
       routingMiddleware
     )
   )
-)
+);
 
 export default store

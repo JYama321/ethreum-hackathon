@@ -6,20 +6,29 @@ contract RealEstate{
 
     using SafeMath for uint;
 
-    // real estate property
+    // real estate 不動産
     struct Property{
         uint id;
         string title;
         uint price;
-        address ownerAddress;
+        address ownerAddress;//不動産のオーナー
         address ownerUportAddress;
-        mapping(uint => bool) isNotEmpty;
+        address rewardAddress;//不動産の利権をもらえる人
+        uint leaseLimit; //貸付の期限。期限を超えたら権利を引き上げることができる
+        uint leasePrice;
+        mapping(uint => bool) isNotEmpty; //
+        bool onSale; //利権が売りに出ているかどうか
     }
 
+    //不動産の予約されている日付
     mapping(uint => uint[]) propertyIdToReservedDate;
+    //利権を売りに出している不動産
+    uint[] onSalePropertyIds;
+    mapping(uint => uint) propertyIdToSaleIndex;
 
     enum Status{Pending, Approved, Declined}
 
+    //予約に関する情報
     struct Request{
         Status status;
         uint propertyId;
@@ -47,7 +56,8 @@ contract RealEstate{
 
     //add user property
     function addProperty(string _title, uint _price, address _uportAddress) external {
-        uint propertyId = properties.push(Property(properties.length, _title, _price, msg.sender, _uportAddress)).sub(1);
+        uint propertyId = properties.push(Property(properties.length, _title, _price, msg.sender, _uportAddress,
+        msg.sender,now,0,false)).sub(1);
         User storage user = userInfo[msg.sender];
         user.properties.push(propertyId);
         emit AddProperty(msg.sender, propertyId, _title);
@@ -60,10 +70,10 @@ contract RealEstate{
         require(_stayLength <= 5);
         require(msg.value >= property.price * _stayLength);
         for(uint i=0;i<_stayLength;i++){
-            if(property.isNotEmpty[_startDate]){
+            if(property.isNotEmpty[_startDate.add(1)]){
                revert();
             }else{
-                property.isNotEmpty[_startDate] = true;
+                property.isNotEmpty[_startDate.add(1)] = true;
             }
         }
         uint requestId = requests.push(Request(
@@ -107,10 +117,13 @@ contract RealEstate{
         request.checked=true;
     }
 
+    //利権を持っているユーザーが資金を引き出す
     function withdrawCharge(uint _requestId) external{
         Request storage request = requests[_requestId];
+        Property storage property = properties[request.propertyId];
+        require(msg.sender == property.rewardAddress);
         if(request.checked || (request.now + 60 days) < now){
-            msg.sender.transfer(request.deposit);
+            property.rewardAddress.transfer(request.deposit);
         }
     }
 
@@ -128,5 +141,53 @@ contract RealEstate{
 
     function requestsLength() external view returns(uint){
         return requests.length;
+    }
+    //利権を売りに出す
+    function propertyOnSale(uint _propertyId, uint _expireDate, uint _price) external {
+        require(_expireDate >= 7 days);
+        Property storage property = properties[_propertyId];
+        //利権もオーナーも自分である場合に売りに出すことができる
+        require(property.ownerAddress == msg.sender && property.ownerAddress == property.rewardAddress);
+        property.onSale = true;
+        property.leasePrice = _price;
+        property.leaseLimit = _expireDate;
+        propertyIdToSaleIndex[_propertyId] = onSalePropertyIds.push(_propertyId).sub(1);
+    }
+
+    //利権をマーケットから撤退する
+    function propertyNotOnSale(uint _propertyId) external{
+        Property storage property = properties[_propertyId];
+        require(msg.sender == property.ownerAddress);
+        uint lastIndex = onSalePropertyIds.length.sub(1);
+        uint lastProperty = onSalePropertyIds[lastIndex];
+        onSalePropertyIds[propertyIdToSaleIndex[_propertyId]] = lastProperty;
+        propertyIdToSaleIndex[lastProperty] = propertyIdToSaleIndex[_propertyId];
+        propertyIdToSaleIndex[_propertyId] = 0;
+        onSalePropertyIds.length--;
+    }
+
+    function removeOnSale(uint _propertyId) internal{
+        Property storage property = properties[_propertyId];
+        uint lastIndex = onSalePropertyIds.length.sub(1);
+        uint lastProperty = onSalePropertyIds[lastIndex];
+        onSalePropertyIds[propertyIdToSaleIndex[_propertyId]] = lastProperty;
+        propertyIdToSaleIndex[lastProperty] = propertyIdToSaleIndex[_propertyId];
+        propertyIdToSaleIndex[_propertyId] = 0;
+        property.onSale = false;
+        onSalePropertyIds.length--;
+    }
+
+    function buyRewardAddress(address _rewardAddress, uint _propertyId) external payable{
+        Property storage property = properties[_propertyId];
+        require(property.leasePrice <= msg.value && property.onSale);
+        property.leaseLimit = now + property.leaseLimit;
+        property.rewardAddress = msg.sender;
+        removeOnSale(_propertyId);
+    }
+
+    function resumeRewardAddress(uint _propertyId) external {
+        Property storage property = properties[_propertyId];
+        require(property.ownerAddress == msg.sender && property.leaseLimit < now);
+        property.rewardAddress = msg.sender;
     }
 }
